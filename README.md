@@ -1,4 +1,4 @@
-# label-consumer
+# ozone-tail
 
 Tails AT Protocol `subscribeLabels` WebSocket firehoses and persists labels to Postgres. Designed as a sidecar for [Osprey](https://github.com/skywatch-bsky/skywatch-osprey), replacing direct Ozone API reads with local database lookups.
 
