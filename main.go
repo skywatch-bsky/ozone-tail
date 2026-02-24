@@ -7,6 +7,7 @@ import (
 	"syscall"
 
 	"github.com/skywatch-bsky/label-consumer/internal/config"
+	"github.com/skywatch-bsky/label-consumer/internal/consumer"
 	"github.com/skywatch-bsky/label-consumer/internal/storage"
 )
 
@@ -30,14 +31,20 @@ func main() {
 	}
 	defer pool.Close()
 
-	log.Println("connected to postgres")
-
 	if err := storage.EnsureSchema(ctx, pool); err != nil {
 		log.Fatalf("failed to ensure schema: %v", err)
 	}
 
-	log.Println("schema ready, waiting for signal...")
+	log.Println("schema ready")
 
-	<-ctx.Done()
-	log.Println("received shutdown signal, exiting")
+	// Phase 2: single labeler only (first in list)
+	c := &consumer.Consumer{
+		Host:          cfg.Labelers[0],
+		Pool:          pool,
+		InitialCursor: cfg.InitialCursor,
+	}
+
+	if err := c.Run(ctx); err != nil {
+		log.Fatalf("consumer error: %v", err)
+	}
 }
