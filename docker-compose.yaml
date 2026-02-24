@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: labelconsumer
+      POSTGRES_PASSWORD: labelconsumer
+      POSTGRES_DB: labels
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U labelconsumer -d labels"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  label-consumer:
+    build: .
+    environment:
+      LABEL_CONSUMER_LABELERS: '["ozone.skywatch.blue"]'
+      LABEL_CONSUMER_POSTGRES_DSN: "postgres://labelconsumer:labelconsumer@postgres:5432/labels?sslmode=disable"
+    ports:
+      - "9090:9090"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
