@@ -2,8 +2,10 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -48,4 +50,19 @@ func EnsureSchema(ctx context.Context, pool *pgxpool.Pool) error {
 		return fmt.Errorf("creating schema: %w", err)
 	}
 	return nil
+}
+
+func ReadCursor(ctx context.Context, pool *pgxpool.Pool, labelerHost string) (*int64, error) {
+	var cursor int64
+	err := pool.QueryRow(ctx,
+		"SELECT cursor FROM label_consumer_cursors WHERE labeler_host = $1",
+		labelerHost,
+	).Scan(&cursor)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("reading cursor for %s: %w", labelerHost, err)
+	}
+	return &cursor, nil
 }
