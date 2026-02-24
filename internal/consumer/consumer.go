@@ -95,7 +95,7 @@ func (c *Consumer) readLoop(ctx context.Context, conn *websocket.Conn) error {
 
 		switch header.Op {
 		case events.EvtKindMessage:
-			if err := c.handleMessage(header.MsgType, r); err != nil {
+			if err := c.handleMessage(ctx, header.MsgType, r); err != nil {
 				return err
 			}
 		case events.EvtKindErrorFrame:
@@ -110,18 +110,17 @@ func (c *Consumer) readLoop(ctx context.Context, conn *websocket.Conn) error {
 	}
 }
 
-func (c *Consumer) handleMessage(msgType string, r io.Reader) error {
+func (c *Consumer) handleMessage(ctx context.Context, msgType string, r io.Reader) error {
 	switch msgType {
 	case "#labels":
 		var evt comatproto.LabelSubscribeLabels_Labels
 		if err := evt.UnmarshalCBOR(r); err != nil {
 			return fmt.Errorf("decoding #labels: %w", err)
 		}
-		for _, label := range evt.Labels {
-			neg := label.Neg != nil && *label.Neg
-			log.Printf("[%s] seq=%d src=%s uri=%s val=%s neg=%v",
-				c.Host, evt.Seq, label.Src, label.Uri, label.Val, neg)
+		if err := storage.ProcessLabelBatch(ctx, c.Pool, c.Host, evt.Seq, evt.Labels); err != nil {
+			return fmt.Errorf("processing label batch seq=%d: %w", evt.Seq, err)
 		}
+		log.Printf("[%s] processed seq=%d labels=%d", c.Host, evt.Seq, len(evt.Labels))
 	case "#info":
 		var info comatproto.LabelSubscribeLabels_Info
 		if err := info.UnmarshalCBOR(r); err != nil {
