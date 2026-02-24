@@ -69,15 +69,17 @@ func (c *Consumer) dial(ctx context.Context, cursor *int64) (*websocket.Conn, er
 }
 
 func (c *Consumer) readLoop(ctx context.Context, conn *websocket.Conn) error {
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
+	go func() {
+		<-ctx.Done()
+		conn.Close()
+	}()
 
+	for {
 		mt, r, err := conn.NextReader()
 		if err != nil {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			return fmt.Errorf("reading message: %w", err)
 		}
 
@@ -97,7 +99,11 @@ func (c *Consumer) readLoop(ctx context.Context, conn *websocket.Conn) error {
 				return err
 			}
 		case events.EvtKindErrorFrame:
-			return fmt.Errorf("received error frame from %s", c.Host)
+			var errframe events.ErrorFrame
+			if err := errframe.UnmarshalCBOR(r); err != nil {
+				return fmt.Errorf("decoding error frame from %s: %w", c.Host, err)
+			}
+			return fmt.Errorf("error frame from %s: %s: %s", c.Host, errframe.Error, errframe.Message)
 		default:
 			log.Printf("[%s] unknown op=%d", c.Host, header.Op)
 		}
