@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/skywatch-bsky/label-consumer/internal/metrics"
 	"github.com/skywatch-bsky/label-consumer/internal/storage"
 )
 
@@ -31,7 +32,10 @@ func (c *Consumer) Run(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("dialing %s: %w", c.Host, err)
 	}
-	defer conn.Close()
+	defer func() {
+		conn.Close()
+		metrics.Connected.WithLabelValues(c.Host).Set(0)
+	}()
 
 	log.Printf("[%s] connected, cursor=%v", c.Host, cursor)
 
@@ -65,6 +69,7 @@ func (c *Consumer) dial(ctx context.Context, cursor *int64) (*websocket.Conn, er
 	if err != nil {
 		return nil, err
 	}
+	metrics.Connected.WithLabelValues(c.Host).Set(1)
 	return conn, nil
 }
 

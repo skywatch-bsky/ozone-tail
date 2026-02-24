@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"net/http"
 	"os/signal"
 	"syscall"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/skywatch-bsky/label-consumer/internal/config"
@@ -40,6 +43,22 @@ func main() {
 	log.Println("schema ready")
 
 	g, gctx := errgroup.WithContext(ctx)
+
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+	srv := &http.Server{Addr: ":9090", Handler: mux}
+
+	g.Go(func() error {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			return fmt.Errorf("metrics server: %w", err)
+		}
+		return nil
+	})
+
+	g.Go(func() error {
+		<-gctx.Done()
+		return srv.Shutdown(context.Background())
+	})
 
 	for _, host := range cfg.Labelers {
 		// Go 1.22+ semantics: loop variables are per-iteration, so capturing

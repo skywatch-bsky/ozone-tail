@@ -8,6 +8,8 @@ import (
 	comatproto "github.com/bluesky-social/indigo/api/atproto"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/skywatch-bsky/label-consumer/internal/metrics"
 )
 
 func ProcessLabelBatch(ctx context.Context, pool *pgxpool.Pool, labelerHost string, seq int64, labels []*comatproto.LabelDefs_Label) error {
@@ -23,16 +25,20 @@ func ProcessLabelBatch(ctx context.Context, pool *pgxpool.Pool, labelerHost stri
 			if err := deleteLabel(ctx, tx, label); err != nil {
 				return fmt.Errorf("deleting label: %w", err)
 			}
+			metrics.LabelsProcessed.WithLabelValues(labelerHost, "delete").Inc()
 		} else {
 			if err := upsertLabel(ctx, tx, label); err != nil {
 				return fmt.Errorf("upserting label: %w", err)
 			}
+			metrics.LabelsProcessed.WithLabelValues(labelerHost, "upsert").Inc()
 		}
 	}
 
 	if err := updateCursor(ctx, tx, labelerHost, seq); err != nil {
 		return fmt.Errorf("updating cursor: %w", err)
 	}
+
+	metrics.CursorValue.WithLabelValues(labelerHost).Set(float64(seq))
 
 	return tx.Commit(ctx)
 }
