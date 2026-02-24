@@ -18,7 +18,7 @@ services:
   label-consumer:
     build: .
     environment:
-      LABEL_CONSUMER_LABELERS: '["ozone.skywatch.blue", "ozone.hailey.at"]'
+      LABEL_CONSUMER_LABELERS: '["ozone.skywatch.blue"]'
       LABEL_CONSUMER_POSTGRES_DSN: "postgres://labelconsumer:labelconsumer@postgres:5432/labels?sslmode=disable"
     ports:
       - "9090:9090"

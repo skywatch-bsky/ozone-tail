@@ -70,7 +70,7 @@ docker run \
 
 ### docker-compose (with Osprey)
 
-See `docker-compose.yaml` in the Osprey repo for the full setup. The service is configured with `restart: unless-stopped`.
+See `docker-osprey-compose.yaml` (coming soon). The service is configured with `restart: unless-stopped`.
 
 ## Prometheus metrics
 
