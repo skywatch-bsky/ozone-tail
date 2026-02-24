@@ -6,6 +6,7 @@ require (
 	github.com/bluesky-social/indigo v0.0.0-20260220055544-bf41e2ee75ab
 	github.com/gorilla/websocket v1.5.3
 	github.com/jackc/pgx/v5 v5.8.0
+	golang.org/x/sync v0.17.0
 )
 
 require (
@@ -65,7 +66,6 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/crypto v0.21.0 // indirect
-	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect

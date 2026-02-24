@@ -6,6 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/skywatch-bsky/label-consumer/internal/config"
 	"github.com/skywatch-bsky/label-consumer/internal/consumer"
 	"github.com/skywatch-bsky/label-consumer/internal/storage"
@@ -37,14 +39,22 @@ func main() {
 
 	log.Println("schema ready")
 
-	// Phase 2: single labeler only (first in list)
-	c := &consumer.Consumer{
-		Host:          cfg.Labelers[0],
-		Pool:          pool,
-		InitialCursor: cfg.InitialCursor,
+	g, gctx := errgroup.WithContext(ctx)
+
+	for _, host := range cfg.Labelers {
+		// Go 1.22+ semantics: loop variables are per-iteration, so capturing
+		// `host` in the closure below is safe without a local copy.
+		c := &consumer.Consumer{
+			Host:          host,
+			Pool:          pool,
+			InitialCursor: cfg.InitialCursor,
+		}
+		g.Go(func() error {
+			return c.Run(gctx)
+		})
 	}
 
-	if err := c.Run(ctx); err != nil {
+	if err := g.Wait(); err != nil {
 		log.Fatalf("consumer error: %v", err)
 	}
 }
