@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS labels (
     cid  TEXT,
     cts  TIMESTAMPTZ,
     exp  TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (src, uri, val)
 );
 

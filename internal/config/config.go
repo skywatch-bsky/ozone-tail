@@ -25,6 +25,11 @@ func Load() (*Config, error) {
 	if len(labelers) == 0 {
 		return nil, fmt.Errorf("LABEL_CONSUMER_LABELERS must contain at least one labeler")
 	}
+	for i, l := range labelers {
+		if l == "" {
+			return nil, fmt.Errorf("LABEL_CONSUMER_LABELERS[%d] is empty", i)
+		}
+	}
 
 	dsn := os.Getenv("LABEL_CONSUMER_POSTGRES_DSN")
 	if dsn == "" {
